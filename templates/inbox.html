@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-inbox me-2"></i>Inbox</h2>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        {% for category, messages in categorized_messages.items() %}
+        <div class="card card-purple mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+				{% if category=="normal" %}
+                    <span class="badge category-badge me-2" style="color:green">{{ category }}</span>
+                    Messages ({{ messages|length }})
+					
+					{%else %}
+					<span class="badge category-badge me-2" style="color:red">{{ category }}</span>
+                    Messages ({{ messages|length }})
+					
+					{% endif %}
+                </h5>
+            </div>
+            <div class="card-body">
+                {% for message in messages %}
+                <div class="message-bubble">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div class="d-flex align-items-center">
+                            <img src="{{ url_for('static', filename='uploads/images/' + message.sender.profile_pic) }}" 
+                                 class="rounded-circle me-2" width="30" height="30"
+                                 onerror="this.src='https://via.placeholder.com/30?text=U'">
+                            <strong>{{ message.sender.username }}</strong>
+                        </div>
+                        <small>{{ message.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                    </div>
+                    
+                    {% if message.content %}
+                    <p class="mb-2">{{ message.content }}</p>
+                    {% endif %}
+                    
+                    {% if message.media_filename %}
+                    <div class="mt-2">
+                        {% if message.media_type == 'images' %}
+                        <img src="{{ url_for('uploaded_file', file_type='images', filename=message.media_filename) }}" 
+                             class="media-preview" alt="Image">
+                        {% elif message.media_type == 'videos' %}
+                        <video controls class="media-preview">
+                            <source src="{{ url_for('uploaded_file', file_type='videos', filename=message.media_filename) }}">
+                        </video>
+                        {% elif message.media_type == 'audio' %}
+                        <audio controls class="w-100">
+                            <source src="{{ url_for('uploaded_file', file_type='audio', filename=message.media_filename) }}">
+                        </audio>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% else %}
+                <p class="text-muted text-center">No messages in this category.</p>
+                {% endfor %}
+            </div>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+            <h4 class="text-muted">No messages yet</h4>
+            <p class="text-muted">Your inbox is empty. Send someone a message!</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

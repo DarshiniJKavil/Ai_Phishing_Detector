@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-tachometer-alt me-2"></i>Dashboard</h2>
+    <a href="{{ url_for('send_message') }}" class="btn btn-purple">
+        <i class="fas fa-paper-plane me-2"></i>New Message
+    </a>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card card-stat text-center stat-card">
+            <div class="card-body">
+                <i class="fas fa-paper-plane fa-2x mb-3"></i>
+                <div class="stat-number">{{ stats.total_sent }}</div>
+                <h6>Messages Sent</h6>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card card-stat text-center stat-card">
+            <div class="card-body">
+                <i class="fas fa-inbox fa-2x mb-3"></i>
+                <div class="stat-number">{{ stats.total_received }}</div>
+                <h6>Messages Received</h6>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card card-stat text-center stat-card">
+            <div class="card-body">
+                <i class="fas fa-users fa-2x mb-3"></i>
+                <div class="stat-number">{{ stats.sent_categories|length }}</div>
+                <h6>Categories Used</h6>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card card-stat text-center stat-card">
+            <div class="card-body">
+                <i class="fas fa-chart-bar fa-2x mb-3"></i>
+                <div class="stat-number">{{ stats.media_types|length }}</div>
+                <h6>Media Types</h6>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts -->
+<div class="row">
+    <!-- Sent Messages by Category -->
+    <div class="col-md-6 mb-4">
+        <div class="card card-purple">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-pie me-2"></i>Sent Messages by Category
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="sentCategoriesChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Received Messages by Category -->
+    <div class="col-md-6 mb-4">
+        <div class="card card-purple">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-pie me-2"></i>Received Messages by Category
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="receivedCategoriesChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Media Type Distribution -->
+    <div class="col-md-6 mb-4">
+        <div class="card card-purple">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-bar me-2"></i>Media Type Distribution
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="mediaTypesChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="col-md-6 mb-4">
+        <div class="card card-purple">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-bolt me-2"></i>Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('send_message') }}" class="btn btn-purple btn-lg">
+                        <i class="fas fa-paper-plane me-2"></i>Send New Message
+                    </a>
+                    <a href="{{ url_for('inbox') }}" class="btn btn-outline-purple btn-lg">
+                        <i class="fas fa-inbox me-2"></i>Check Inbox
+                    </a>
+                    <a href="{{ url_for('sent_messages') }}" class="btn btn-outline-purple btn-lg">
+                        <i class="fas fa-history me-2"></i>View Sent Messages
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Purple theme colors
+const purpleColors = [
+    '#6f42c1', '#8b5cf6', '#a78bfa', '#c4b5fd', '#ddd6fe',
+    '#5b21b6', '#7c3aed', '#8b5cf6', '#a78bfa', '#c4b5fd'
+];
+
+// Sent Categories Chart
+const sentCtx = document.getElementById('sentCategoriesChart').getContext('2d');
+const sentCategoriesChart = new Chart(sentCtx, {
+    type: 'pie',
+    data: {
+        labels: {{ stats.sent_categories.keys()|list|tojson }},
+        datasets: [{
+            data: {{ stats.sent_categories.values()|list|tojson }},
+            backgroundColor: purpleColors,
+            borderWidth: 2,
+            borderColor: '#fff'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'right'
+            }
+        }
+    }
+});
+
+// Received Categories Chart
+const receivedCtx = document.getElementById('receivedCategoriesChart').getContext('2d');
+const receivedCategoriesChart = new Chart(receivedCtx, {
+    type: 'doughnut',
+    data: {
+        labels: {{ stats.received_categories.keys()|list|tojson }},
+        datasets: [{
+            data: {{ stats.received_categories.values()|list|tojson }},
+            backgroundColor: purpleColors,
+            borderWidth: 2,
+            borderColor: '#fff'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'right'
+            }
+        }
+    }
+});
+
+// Media Types Chart
+const mediaCtx = document.getElementById('mediaTypesChart').getContext('2d');
+const mediaTypesChart = new Chart(mediaCtx, {
+    type: 'bar',
+    data: {
+        labels: {{ stats.media_types.keys()|list|tojson }},
+        datasets: [{
+            label: 'Message Count',
+            data: {{ stats.media_types.values()|list|tojson }},
+            backgroundColor: purpleColors[0],
+            borderColor: purpleColors[1],
+            borderWidth: 2
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    stepSize: 1
+                }
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

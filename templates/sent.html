@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-paper-plane me-2"></i>Sent Messages</h2>
+    <a href="{{ url_for('send_message') }}" class="btn btn-purple">
+        <i class="fas fa-plus me-2"></i>New Message
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        {% for receiver_name, messages in receiver_messages.items() %}
+        <div class="card card-purple mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-user me-2"></i>To: {{ receiver_name }}
+                    <span class="badge bg-secondary ms-2">{{ messages|length }} messages</span>
+                </h5>
+            </div>
+            <div class="card-body">
+                {% for message in messages %}
+                <div class="message-bubble message-bubble-sent">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <span class="badge category-badge me-2">{{ message.category }}</span>
+                            <small class="text-muted">Sent: {{ message.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                        </div>
+                        <div>
+                            {% if message.media_filename %}
+                            <span class="badge bg-info">
+                                <i class="fas fa-{{ 'image' if message.media_type == 'images' else 'video' if message.media_type == 'videos' else 'music' }} me-1"></i>
+                                {{ message.media_type|title }}
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    {% if message.content %}
+                    <p class="mb-2">{{ message.content }}</p>
+                    {% endif %}
+                    
+                    {% if message.media_filename %}
+                    <div class="mt-2">
+                        {% if message.media_type == 'images' %}
+                        <img src="{{ url_for('uploaded_file', file_type='images', filename=message.media_filename) }}" 
+                             class="media-preview" alt="Sent image">
+                        {% elif message.media_type == 'videos' %}
+                        <video controls class="media-preview">
+                            <source src="{{ url_for('uploaded_file', file_type='videos', filename=message.media_filename) }}">
+                        </video>
+                        {% elif message.media_type == 'audio' %}
+                        <audio controls class="w-100">
+                            <source src="{{ url_for('uploaded_file', file_type='audio', filename=message.media_filename) }}">
+                        </audio>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-paper-plane fa-3x text-muted mb-3"></i>
+            <h4 class="text-muted">No sent messages yet</h4>
+            <p class="text-muted">You haven't sent any messages yet. Start a conversation!</p>
+            <a href="{{ url_for('send_message') }}" class="btn btn-purple mt-3">
+                <i class="fas fa-paper-plane me-2"></i>Send Your First Message
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
