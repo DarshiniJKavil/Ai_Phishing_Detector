@@ -20,7 +20,6 @@ sys.modules["keras.src.preprocessing"] = keras_fake_pre
 sys.modules["keras.src.preprocessing.text"] = keras_fake_text
 # ============================
 
-
 from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory, jsonify
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -41,10 +40,8 @@ from nltk.corpus import stopwords
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from moviepy.editor import VideoFileClip
-from werkzeug.utils import secure_filename
 import speech_recognition as sr
 from pydub import AudioSegment
-import os
 import cv2
 import pytesseract
 from PIL import Image
@@ -52,10 +49,8 @@ from googletrans import Translator
 translator = Translator()
 
 from PIL import Image, ImageOps, ImageFilter
-import pytesseract
 
 def imgtotext(fname):
-    pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
     image = Image.open(fname)
     gray_image = ImageOps.grayscale(image)
     scale_factor = 2
@@ -128,10 +123,8 @@ def audiototext(fname):
             text = r.recognize_google(audio_data)
             print("\n📝 Transcribed Text:\n")
             print(text)
-        except sr.UnknownValueError:
-            print("❌ Speech Recognition could not understand the audio.")
-        except sr.RequestError as e:
-            print(f"❌ Could not request results; {e}")
+        except:
+            pass
     return text
 
 def videoaudio(fname):
@@ -157,9 +150,7 @@ def predict_text(text):
 
 def classify_message(content):
     res = predict_text(content)
-    res = res.lower()
-    print(res)
-    return res
+    return res.lower()
 
 @app.route('/')
 def index():
@@ -188,7 +179,7 @@ def register():
         db.session.add(new_user)
         db.session.commit()
 
-        flash('Registration successful! Please login.')
+        flash('Registration successful!')
         return redirect(url_for('login'))
     return render_template('register.html')
 
@@ -222,8 +213,7 @@ def dashboard():
 @app.route('/dashboard/stats')
 @login_required
 def dashboard_stats():
-    stats = get_dashboard_stats()
-    return jsonify(stats)
+    return jsonify(get_dashboard_stats())
 
 @app.route('/send_message', methods=['GET', 'POST'])
 @login_required
@@ -234,7 +224,6 @@ def send_message():
         receiver_id = request.form['receiver_id']
         content = request.form.get('content', '')
 
-        detected = translator.detect(content)
         translated = translator.translate(content, dest='en')
         content = translated.text
 
@@ -260,21 +249,18 @@ def send_message():
 
                 if file_type == "images":
                     content = imgtotext(file_path)
-                    translated = translator.translate(content, dest='en')
-                    content = translated.text
+                    content = translator.translate(content, dest='en').text
                     category = classify_message(content)
 
                 if file_type == "videos":
                     videoaudio(file_path)
                     content = audiototext("static/output_audio.wav")
-                    translated = translator.translate(content, dest='en')
-                    content = translated.text
+                    content = translator.translate(content, dest='en').text
                     category = classify_message(content)
 
                 if file_type == "audio":
                     content = audiototext(file_path)
-                    translated = translator.translate(content, dest='en')
-                    content = translated.text
+                    content = translator.translate(content, dest='en').text
                     category = classify_message(content)
 
                 message.media_type = file_type
@@ -283,7 +269,6 @@ def send_message():
 
         db.session.add(message)
         db.session.commit()
-
         flash('Message sent successfully!')
         return redirect(url_for('sent_messages'))
 
@@ -294,10 +279,8 @@ def send_message():
 def inbox():
     messages = Message.query.filter_by(receiver_id=current_user.id).order_by(Message.created_at.desc()).all()
     categorized_messages = {}
-
     for msg in messages:
         categorized_messages.setdefault(msg.category, []).append(msg)
-
     return render_template('inbox.html', categorized_messages=categorized_messages)
 
 @app.route('/sent')
@@ -305,26 +288,22 @@ def inbox():
 def sent_messages():
     messages = Message.query.filter_by(sender_id=current_user.id).order_by(Message.created_at.desc()).all()
     receiver_messages = {}
-
     for msg in messages:
         receiver_messages.setdefault(msg.receiver.username, []).append(msg)
-
     return render_template('sent.html', receiver_messages=receiver_messages)
 
 @app.route('/profile', methods=['GET', 'POST'])
 @login_required
 def profile():
     if request.method == 'POST':
-        if 'profile_pic' in request.files:
-            profile_pic = request.files['profile_pic']
-            if profile_pic and allowed_file(profile_pic.filename, 'images'):
-                filename = secure_filename(f"profile_{current_user.id}_{profile_pic.filename}")
-                profile_pic.save(os.path.join(app.config['UPLOAD_FOLDER'], 'images', filename))
-                current_user.profile_pic = filename
-                db.session.commit()
-                flash('Profile picture updated successfully!')
+        profile_pic = request.files.get('profile_pic')
+        if profile_pic and allowed_file(profile_pic.filename, 'images'):
+            filename = secure_filename(f"profile_{current_user.id}_{profile_pic.filename}")
+            profile_pic.save(os.path.join(app.config['UPLOAD_FOLDER'], 'images', filename))
+            current_user.profile_pic = filename
+            db.session.commit()
+            flash('Profile picture updated successfully!')
         return redirect(url_for('profile'))
-
     return render_template('profile.html')
 
 @app.route('/uploads/<file_type>/<filename>')
@@ -332,7 +311,12 @@ def profile():
 def uploaded_file(file_type, filename):
     return send_from_directory(os.path.join(app.config['UPLOAD_FOLDER'], file_type), filename)
 
+# ============================
+# FIX FOR RENDER / RAILWAY DEPLOYMENT
+# ============================
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    app.run(debug=True)
+
+    port = int(os.environ.get("PORT", 8000))
+    app.run(host="0.0.0.0", port=port, debug=True)
