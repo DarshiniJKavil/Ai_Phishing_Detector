@@ -1,0 +1,35 @@
+# railway.toml – Deployment config for Railway
+
+[build]
+builder = "NIXPACKS"
+buildCommand = "pip install -r requirements.txt"
+
+[start]
+# Gunicorn will run your Flask app as "app:app"
+cmd = "gunicorn app:app --bind 0.0.0.0:$PORT"
+
+# ==============================================
+# SYSTEM PACKAGES REQUIRED BY YOUR APPLICATION
+# ==============================================
+# - ffmpeg       → For moviepy, video/audio extraction
+# - tesseract    → For OCR image text extraction
+# - opencv       → For image/video processing (cv2)
+# - libgl1       → OpenCV requirement (GUI backend)
+# - libsm6       → OpenCV requirement
+# - libxext6     → OpenCV requirement
+# - libxrender1  → OpenCV requirement
+# - espeak, flac → Required for SpeechRecognition
+# ==============================================
+
+[nixpacks]
+aptPkgs = [
+  "ffmpeg",
+  "tesseract-ocr",
+  "libgl1",
+  "libsm6",
+  "libxext6",
+  "libxrender1",
+  "flac",
+  "espeak"
+]
+
